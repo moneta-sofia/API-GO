@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 	"log"
 	"slices"
 
@@ -19,6 +18,7 @@ type (
 		Create(ctx context.Context, user *domain.User) error
 		GetAll(ctx context.Context) ([]domain.User, error)
 		Get(ctx context.Context, id uint64) (*domain.User, error)
+		Update(ctx context.Context, id uint64, firstName, lastName, email *string) error
 	}
 	repo struct {
 		db  DB
@@ -51,7 +51,24 @@ func (r *repo) Get(ctx context.Context, id uint64) (*domain.User, error) {
 		return v.ID == id
 	})
 	if index < 0 {
-		return nil, errors.New("users doesnt't exist")
+		return nil, ErrorNotFound{id}
 	}
 	return &r.db.Users[index], nil
+}
+
+func (r *repo) Update(ctx context.Context, id uint64, firstName, lastName, email *string) error {
+	user, err := r.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if firstName != nil {
+		user.FirstName = *firstName
+	}
+	if lastName != nil {
+		user.LastName = *lastName
+	}
+	if email != nil {
+		user.Email = *email
+	}
+	return nil
 }
