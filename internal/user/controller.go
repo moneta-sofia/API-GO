@@ -12,6 +12,11 @@ type (
 	Endpoints struct {
 		Create Controller
 		GetAll Controller
+		Get    Controller
+	}
+
+	GetReq struct {
+		ID uint64
 	}
 	CreateReq struct {
 		FirstName string `json:"first_name"`
@@ -24,16 +29,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 	return Endpoints{
 		Create: makeCreateEndpoints(s),
 		GetAll: makeGetAllEndpoints(s),
-	}
-}
-
-func makeGetAllEndpoints(s Service) Controller {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		users, err := s.GetAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return users, nil
+		Get:    makeGetEndpoints(s),
 	}
 }
 
@@ -54,6 +50,28 @@ func makeCreateEndpoints(s Service) Controller {
 		if err != nil {
 			return nil, err
 		}
+		return user, nil
+	}
+}
+
+func makeGetAllEndpoints(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		users, err := s.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return users, nil
+	}
+}
+
+func makeGetEndpoints(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(GetReq)
+		user, err := s.Get(ctx, req.ID)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(req)
 		return user, nil
 	}
 }
