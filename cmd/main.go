@@ -14,7 +14,18 @@ import (
 func main() {
 	server := http.NewServeMux()
 
-	db := bootstrap.NewDB()
+	db, err := bootstrap.NewDB()
+
+	if err != nil {
+		log.Fatalf("Error connecting to DB: %v", err)
+	}
+
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Error pinging DB: %v", err)
+	}
+
 	loger := bootstrap.NewLogger()
 	repo := user.NewRepository(db, loger)
 	service := user.NewService(loger, repo)

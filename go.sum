@@ -1,3 +1,7 @@
+filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
+filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
+github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
+github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/moneta-sofia/response v0.0.2 h1:bExEdwu0cxyj5Y0uYw6xEDLX+phmUytK5KQEfGRcEr4=
 github.com/moneta-sofia/response v0.0.2/go.mod h1:vRTw3QAgowwN9PNQF4eYo1nhiJJoX0+e3TZka70i9vw=
 github.com/moneta-sofia/response v0.0.3 h1:UhIp1D6S4NpIAFjXeIdOO5Qoj/xyY2Mjrj+oM0Vp4Sc=
