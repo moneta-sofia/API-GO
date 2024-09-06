@@ -10,6 +10,7 @@ import (
 
 	"github.com/moneta-sofia/API-GO.git/internal/user"
 	"github.com/moneta-sofia/API-GO.git/pkg/transport"
+	"github.com/moneta-sofia/response/response"
 )
 
 func NewUserHTTPServer(ctx context.Context, router *http.ServeMux, endpoints user.Endpoints) {
@@ -85,14 +86,20 @@ func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req user.UpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		return nil, fmt.Errorf("invalid request format: %v", err.Error())
 	}
+
 	params := ctx.Value("params").(map[string]string)
+	log.Printf("Params: %v", params) // Asegúrate de que los parámetros estén presentes
+
 	id, err := strconv.ParseUint(params["userID"], 10, 64)
 	if err != nil {
+		log.Printf("Error parsing userID: %v", err)
 		return nil, err
 	}
 	req.ID = id
+	log.Printf("Decoded UpdateRequest: %+v", req) // Imprime el request completo
 	return req, nil
 }
 
@@ -105,23 +112,20 @@ func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	data, err := json.Marshal(response)
-	if err != nil {
-		return err
-	}
-	status := http.StatusOK
-	w.WriteHeader(status)
+func encodeResponse(ctx context.Context, w http.ResponseWriter, res interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	fmt.Fprintf(w, `{"status": %d, "data": %s}`, status, data)
-	return nil
+	r := res.(response.Response)
+	w.WriteHeader(r.StatusCode())
+
+	return json.NewEncoder(w).Encode(res)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	status := http.StatusInternalServerError
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	fmt.Fprintf(w, `{"status": %d, "message": "%s"}`, status, err.Error())
+	resp := err.(response.Response)
+
+	w.WriteHeader(resp.StatusCode())
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func InvalidMethod(w http.ResponseWriter) {
