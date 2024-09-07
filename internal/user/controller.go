@@ -85,7 +85,7 @@ func makeGetEndpoint(s Service) Controller {
 			return nil, response.InternalServerError(err.Error())
 		}
 		fmt.Println(req)
-		return response.Created("succes", user), nil
+		return response.OK("succes", user), nil
 	}
 }
 func makeUpdateEndpoints(s Service) Controller {

@@ -3,7 +3,9 @@ package user
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/moneta-sofia/API-GO.git/internal/domain"
 )
@@ -73,28 +75,55 @@ func (r *repo) GetAll(ctx context.Context) ([]domain.User, error) {
 }
 
 func (r *repo) Get(ctx context.Context, id uint64) (*domain.User, error) {
-	// index := slices.IndexFunc(r.db.Users, func(v domain.User) bool {
-	// 	return v.ID == id
-	// })
-	// if index < 0 {
-	// 	return nil, ErrorNotFound{id}
-	// }
-	return nil, nil
+	sqlQ := "SELECT id, first_name, last_name, email FROM users WHERE id = ?"
+	var user domain.User
+	if err := r.db.QueryRow(sqlQ, id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email); err != nil {
+
+		if err == sql.ErrNoRows {
+			return nil, ErrorNotFound{id}
+		}
+		return nil, err
+	}
+
+	r.log.Println("user get with id : ", id)
+	return &user, nil
 }
 
 func (r *repo) Update(ctx context.Context, id uint64, firstName, lastName, email *string) error {
-	// user, err := r.Get(ctx, id)
-	// if err != nil {
-	// 	return err
-	// }
-	// if firstName != nil {
-	// 	user.FirstName = *firstName
-	// }
-	// if lastName != nil {
-	// 	user.LastName = *lastName
-	// }
-	// if email != nil {
-	// 	user.Email = *email
-	// }
+	var fields []string
+	var values []interface{}
+
+	if firstName != nil {
+		fields = append(fields, "first_name=?")
+		values = append(values, *firstName)
+	}
+	if lastName != nil {
+		fields = append(fields, "last_name=?")
+		values = append(values, *lastName)
+	}
+	if email != nil {
+		fields = append(fields, "email=?")
+		values = append(values, *email)
+	}
+
+	if len(fields) == 0 {
+		r.log.Println(ErrThereArentFields.Error())
+		return ErrThereArentFields
+	}
+
+	values = append(values, id)
+	sqlQ := fmt.Sprintf("UPDATE users SET %s WHERE id=? ", strings.Join(fields, ","))
+	res, err := r.db.Exec(sqlQ, values...)
+	if err != nil {
+		r.log.Println(err.Error())
+		return err
+	}
+	row, err := res.RowsAffected()
+	if row == 0 {
+		err := ErrorNotFound{id}
+		r.log.Println(err.Error())
+		return err
+	}
+	r.log.Println("user updated id: ", id)
 	return nil
 }
