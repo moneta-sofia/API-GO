@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/moneta-sofia/API-GO.git/internal/user"
 	"github.com/moneta-sofia/API-GO.git/pkg/bootstrap"
 	"github.com/moneta-sofia/API-GO.git/pkg/handler"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	server := http.NewServeMux()
 
 	db, err := bootstrap.NewDB()
@@ -32,7 +36,8 @@ func main() {
 	ctx := context.Background()
 
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
+	port := os.Getenv("PORT")
 
-	fmt.Println("Server started at port 8080")
-	log.Fatal(http.ListenAndServe(":8080", server))
+	fmt.Println("Server started at port ", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), server))
 }

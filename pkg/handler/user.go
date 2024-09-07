@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/moneta-sofia/API-GO.git/internal/user"
@@ -27,6 +29,9 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(http.Respons
 		if pathSize == 4 && path[2] != "" {
 			params["userID"] = path[2]
 		}
+
+		params["token"] = r.Header.Get("Authorization")
+
 		tran := transport.New(w, r, context.WithValue(ctx, "params", params))
 
 		var end user.Controller
@@ -71,13 +76,21 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(http.Respons
 }
 
 func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	// params := ctx.Value("params").(map[string]string)
+	// if err := tokenVerify(params["token"]); err != nil {
+	// 	return nil, response.Unauthorized(err.Error())
+	// }
 	return nil, nil
 }
 func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
+
 	params := ctx.Value("params").(map[string]string)
+	// if err := tokenVerify(params["token"]); err != nil {
+	// 	return nil, response.Unauthorized(err.Error())
+	// }
 	id, err := strconv.ParseUint(params["userID"], 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, response.BadRequest(err.Error())
 	}
 	return user.GetReq{
 		ID: id,
@@ -86,17 +99,18 @@ func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req user.UpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Error decoding request body: %v", err)
-		return nil, fmt.Errorf("invalid request format: %v", err.Error())
+		return nil, response.BadRequest(fmt.Sprintf("invalid request format: %v", err.Error()))
 	}
 
 	params := ctx.Value("params").(map[string]string)
-	log.Printf("Params: %v", params) // Asegúrate de que los parámetros estén presentes
+	if err := tokenVerify(params["token"]); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
 
 	id, err := strconv.ParseUint(params["userID"], 10, 64)
 	if err != nil {
 		log.Printf("Error parsing userID: %v", err)
-		return nil, err
+		return nil, response.BadRequest(err.Error())
 	}
 	req.ID = id
 	log.Printf("Decoded UpdateRequest: %+v", req) // Imprime el request completo
@@ -104,12 +118,23 @@ func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	params := ctx.Value("params").(map[string]string)
+	if err := tokenVerify(params["token"]); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
 	var req user.CreateReq
 	fmt.Print(req)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, fmt.Errorf("invalid request: %v", err)
+		return nil, response.BadRequest(fmt.Sprintf("invalid request: %v", err))
 	}
 	return req, nil
+}
+
+func tokenVerify(token string) error {
+	if os.Getenv("TOKEN") != token {
+		return errors.New("Invalid token")
+	}
+	return nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, res interface{}) error {
